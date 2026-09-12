@@ -1,9 +1,96 @@
-import example.pepita
+import example.*
 
-describe "group of tests for pepita" {
+describe "destinos y mensajeros" {
+  test "Roberto puede llevar un paquete pago en camion con un acoplado" {
+    const roberto = mensajeros.roberto(90)
+    roberto.viajarEnCamion(1)
+    const paquete = new PaqueteConDestino()
+    paquete.configurarDestino(puenteDeBrooklyn)
+    paquete.pagar(50)
 
-  test "pepita has initial energy" {
-    assert.equals(100, pepita.energy())
+    assert.equals(true, roberto.puedeEntregar(paquete))
   }
 
+  test "Neo con credito no puede llevar un paquete impago a Matrix" {
+    const neo = mensajeros.neo(true)
+    const paquete = new PaqueteConDestino()
+    paquete.configurarDestino(laMatrix)
+
+    assert.equals(false, neo.puedeEntregar(paquete))
+  }
+}
+
+describe "empresa de mensajeria" {
+  const empresa = new Mensajeria()
+
+  test "contrata, despide y detecta si es grande" {
+    empresa.contratar(chuckNorris)
+    empresa.contratar(mensajeros.roberto(90))
+    empresa.contratar(mensajeros.neo(true))
+
+    assert.equals(true, empresa.esGrande())
+    empresa.despedir(chuckNorris)
+    assert.equals(false, empresa.esGrande())
+    empresa.despedirATodos()
+    assert.equals(false, empresa.esGrande())
+  }
+
+  test "consulta al primer empleado y el peso del ultimo" {
+    empresa.contratar(chuckNorris)
+    empresa.contratar(mensajeros.roberto(90))
+    const paquete = new Paquetito()
+
+    assert.equals(true, empresa.primerEmpleadoPuedeEntregar(paquete))
+    assert.equals(95, empresa.pesoDelUltimoMensajero())
+    empresa.despedirATodos()
+  }
+}
+
+describe "paquetes y colecciones" {
+  test "un paqueton requiere pagar todos sus destinos" {
+    const paqueton = new PaquetonViajero()
+    paqueton.configurarDestinos([puenteDeBrooklyn, laMatrix])
+    const neo = mensajeros.neo(true)
+    paqueton.pagar(100)
+    assert.equals(false, paqueton.puedeSerEntregadoPor(neo))
+    paqueton.pagar(100)
+    assert.equals(true, paqueton.puedeSerEntregadoPor(neo))
+  }
+
+  test "la empresa filtra mensajeros y calcula sobrepeso" {
+    const empresa = new Mensajeria()
+    const roberto = mensajeros.roberto(600)
+    roberto.viajarEnCamion(1)
+    empresa.contratar(roberto)
+    empresa.contratar(chuckNorris)
+
+    assert.equals(1, empresa.mensajerosQuePuedenEntregar(new Paquetito()).size())
+    assert.equals(true, empresa.tieneSobrepeso())
+  }
+
+  test "envia paquetes, factura y conserva pendientes" {
+    const empresa = new Mensajeria()
+    empresa.contratar(mensajeros.neo(true))
+    const paquete = new Paquetito()
+    const impago = new Paquete()
+
+    assert.equals(true, empresa.enviar(paquete))
+    assert.equals(false, empresa.enviar(impago))
+    assert.equals(0, empresa.facturacion())
+    assert.equals(1, empresa.cantidadDePendientes())
+  }
+
+  test "envia todos y luego reintenta el pendiente mas caro" {
+    const empresa = new Mensajeria()
+    empresa.contratar(mensajeros.neo(true))
+    const paquetes = [new Paquetito(), new Paquete()]
+
+    empresa.enviarTodos(paquetes)
+    assert.equals(0, empresa.facturacion())
+    assert.equals(1, empresa.cantidadDePendientes())
+    paquetes.get(1).pagar(50)
+    assert.equals(true, empresa.enviarPendienteMasCaro())
+    assert.equals(0, empresa.cantidadDePendientes())
+    assert.equals(50, empresa.facturacion())
+  }
 }
